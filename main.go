@@ -26,19 +26,18 @@ func main() {
 	}
 
 	//Get application configuration from flags
-	config := configuration.NewApplicationConfiguration()
-	config.ParseFlags()
+	c := configuration.NewApplicationConfiguration()
+	c.ParseFlags()
 
-	logger.Debug("application started", zap.Any("configuration", config))
+	logger.Debug("application started", zap.Any("configuration", c))
 
-	mongoSession, err := storage.NewMongoConnection(
-		config.Mongo.Hosts,
-		config.Mongo.DbName,
-		config.Mongo.Username,
-		config.Mongo.Password)
+	pgConnection, err := storage.NewPostgresConnection(
+		c.Postgres.Address,
+		c.Postgres.Username,
+		c.Postgres.Password,
+		c.Postgres.DBName)
 	if err != nil {
-		logger.Error("unable to create mongo storage", zap.Error(err))
-		return
+		logger.Fatal("unable to connect to Postgre DB", zap.Error(err))
 	}
 
 	//Make application context
@@ -52,17 +51,17 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	//Create candidates repository, controller and build routes
-	candidateController := candidate.NewController(candidate.NewMongoRepository(mongoSession, config.Mongo.DbName))
+	candidateController := candidate.NewController(candidate.NewPostgresCandidateRepository(pgConnection, logger), logger)
 	candidateController.BuildRoutes(router)
 
 	//Create interviewer repository, controller and build routes
-	interviewerController := interviewer.NewController(interviewer.NewMongoRepository(mongoSession, config.Mongo.DbName))
+	interviewerController := interviewer.NewController(interviewer.NewPostgresInterviewersRepository(pgConnection, logger), logger)
 	interviewerController.BuildRoutes(router)
 
 	//Start HTTP server
-	appServer := server.NewHTTPServer(config.Host, config.Port, router, logger)
+	appServer := server.NewHTTPServer(c.Host, c.Port, router, logger)
 	appServer.Start(applicationContext)
-
+	logger.Info("Application started")
 	//Listen to system signals
 	for {
 		select {

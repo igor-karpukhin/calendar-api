@@ -1,8 +1,8 @@
 package configuration
 
-type Mongo struct {
-	Hosts    string
-	DbName   string
+type Postgres struct {
+	Address  string
 	Username string
 	Password string
+	DBName   string
 }
