@@ -1,25 +1,29 @@
+CREATE ROLE ki_test_user WITH LOGIN PASSWORD 'ki_test_pass';
+GRANT ALL PRIVILEGES ON DATABASE ki_test TO ki_test_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA ki TO ki_test_user;
+
 CREATE SCHEMA ki;
+
 CREATE SEQUENCE ki.ts_index START WITH 100000000;
 CREATE SEQUENCE ki.iv_index START WITH 200000000;
-CREATE SEQUENCE ki.c_index START WITH 300000000;
-
-CREATE TABLE ki.time_slots (
-    id INTEGER DEFAULT nextval('ki.ts_index'::regclass) NOT NULL,
-    date_from DATE NOT NULL,
-    date_to DATE NOT NULL,
-    CONSTRAINT pk PRIMARY KEY(id)
-);
+CREATE SEQUENCE ki.ca_index START WITH 300000000;
 
 CREATE TABLE ki.interviewers (
-    id INTEGER PRIMARY KEY DEFAULT nextval('ki.iv_index'::regclass) NOT NULL,
-    name VARCHAR(50),
-    timeslot_id INTEGER,
-    CONSTRAINT fk_ts_id FOREIGN KEY(timeslot_id) REFERENCES ki.time_slots(id)
+    id INTEGER UNIQUE PRIMARY KEY DEFAULT nextval('ki.iv_index'::regclass) NOT NULL,
+    name VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE ki.candidates (
-    id INTEGER DEFAULT nextval('ki.c_index'::regclass) NOT NULL,
-    name VARCHAR(50),
-    timeslot_id INTEGER,
-    CONSTRAINT fk_ts_id FOREIGN KEY(timeslot_id) REFERENCES ki.time_slots(id)
+    id INTEGER UNIQUE PRIMARY KEY DEFAULT nextval('ki.ca_index'::regclass) NOT NULL,
+    name VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE ki.time_slots (
+    id INTEGER PRIMARY KEY DEFAULT nextval('ki.ts_index'::regclass) NOT NULL,
+    date_from DATE NOT NULL,
+    date_to DATE NOT NULL,
+    iv_id INTEGER DEFAULT NULL,
+    ca_id INTEGER DEFAULT NULL ,
+    CONSTRAINT fk_iv_id FOREIGN KEY (iv_id) REFERENCES ki.interviewers(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_ca_id FOREIGN KEY (ca_id) REFERENCES ki.candidates(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
